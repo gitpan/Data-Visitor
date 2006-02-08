@@ -1,0 +1,9 @@
+Build.PL
+lib/Data/Visitor.pm
+lib/Data/Visitor/Callback.pm
+MANIFEST			This list of files
+t/base.t
+t/callback.t
+META.yml
+Makefile.PL
+SIGNATURE    Added here by Module::Build

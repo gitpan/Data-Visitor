@@ -1,0 +1,19 @@
+---
+name: Data-Visitor
+version: 0.01
+author: ~
+abstract: A visitor for Perl data structures
+license: perl
+requires:
+  perl: >= 5.008
+build_requires:
+  Test::MockObject::Extends: 0
+  Test::More: 0
+  Test::use::ok: 0
+provides:
+  Data::Visitor:
+    file: lib/Data/Visitor.pm
+    version: 0.01
+  Data::Visitor::Callback:
+    file: lib/Data/Visitor/Callback.pm
+generated_by: Module::Build version 0.2611
