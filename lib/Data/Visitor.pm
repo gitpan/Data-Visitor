@@ -7,16 +7,21 @@ use strict;
 use warnings;
 
 use Scalar::Util ();
+use overload ();
+use Symbol ();
 
-our $VERSION = "0.01";
+our $VERSION = "0.02";
 
 sub visit {
 	my ( $self, $data ) = @_;
 
+	local $self->{_seen} = ($self->{_seen} || {});
+	return $data if ref $data and $self->{_seen}{ overload::StrVal( $data ) }++;
+
 	if ( Scalar::Util::blessed( $data ) ) {
 		return $self->visit_object( $data );
 	} elsif ( my $reftype = ref $data ) {
-		if ( $reftype eq "HASH" or $reftype eq "ARRAY" ) {
+		if ( $reftype eq "HASH" or $reftype eq "ARRAY" or $reftype eq "GLOB" or $reftype eq "SCALAR") {
 			my $method = lc "visit_$reftype";
 			return $self->$method( $data );
 		}
@@ -55,6 +60,22 @@ sub visit_array {
 	} else {
 		return [ map { $self->visit( $_ ) } @$array ];
 	}
+}
+
+sub visit_scalar {
+	my ( $self, $scalar ) = @_;
+	return \$self->visit( $$scalar );
+}
+
+sub visit_glob {
+	my ( $self, $glob ) = @_;
+
+	my $new_glob = Symbol::gensym();
+
+	no warnings 'misc'; # Undefined value assigned to typeglob
+	*$new_glob = $self->visit( *$glob{$_} || next ) for qw/SCALAR ARRAY HASH/;
+
+	return $new_glob;
 }
 
 __PACKAGE__;
@@ -136,6 +157,20 @@ inherits L<Class::Accessor> to get a sane C<new>.
 Then override the callback methods in any way you like. To retain visitor
 behavior, make sure to retain the functionality of C<visit_array> and
 C<visit_hash>.
+
+=head1 SEE ALSO
+
+L<Tree::Simple::VisitorFactory>, L<Data::Traverse>
+
+=head1 AUTHOR
+
+Yuval Kogman <nothingmuch@woobling.org>
+
+=head1 COPYRIGHT & LICENSE
+
+	Copyright (c) 2006 Yuval Kogman. All rights reserved
+	This program is free software; you can redistribute
+	it and/or modify it under the same terms as Perl itself.
 
 =cut
 

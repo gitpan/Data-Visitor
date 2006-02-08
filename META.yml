@@ -1,7 +1,8 @@
 ---
 name: Data-Visitor
-version: 0.01
-author: ~
+version: 0.02
+author:
+  - Yuval Kogman <nothingmuch@woobling.org>
 abstract: A visitor for Perl data structures
 license: perl
 requires:
@@ -13,7 +14,7 @@ build_requires:
 provides:
   Data::Visitor:
     file: lib/Data/Visitor.pm
-    version: 0.01
+    version: 0.02
   Data::Visitor::Callback:
     file: lib/Data/Visitor/Callback.pm
 generated_by: Module::Build version 0.2611

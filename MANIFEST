@@ -1,9 +1,13 @@
 Build.PL
+Changes
 lib/Data/Visitor.pm
 lib/Data/Visitor/Callback.pm
+Makefile.PL
 MANIFEST			This list of files
+META.yml
 t/base.t
 t/callback.t
-META.yml
-Makefile.PL
+t/callback_aliasing.t
+t/circular_refs.t
+t/globs.t
 SIGNATURE    Added here by Module::Build
