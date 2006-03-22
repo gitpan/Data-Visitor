@@ -1,20 +1,21 @@
 ---
 name: Data-Visitor
-version: 0.02
+version: 0.03
 author:
-  - Yuval Kogman <nothingmuch@woobling.org>
-abstract: A visitor for Perl data structures
+  - 'Yuval Kogman <nothingmuch@woobling.org>'
+abstract: Visitor style traversal of Perl data structures
 license: perl
 requires:
-  perl: >= 5.008
+  perl: '>= 5.008'
 build_requires:
+  Class::Accessor: 0
   Test::MockObject::Extends: 0
   Test::More: 0
   Test::use::ok: 0
 provides:
   Data::Visitor:
     file: lib/Data/Visitor.pm
-    version: 0.02
+    version: 0.03
   Data::Visitor::Callback:
     file: lib/Data/Visitor/Callback.pm
 generated_by: Module::Build version 0.2611

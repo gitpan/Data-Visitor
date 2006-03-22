@@ -10,7 +10,7 @@ use Scalar::Util ();
 use overload ();
 use Symbol ();
 
-our $VERSION = "0.02";
+our $VERSION = "0.03";
 
 sub visit {
 	my ( $self, $data ) = @_;
@@ -86,25 +86,37 @@ __END__
 
 =head1 NAME
 
-Data::Visitor - A visitor for Perl data structures
+Data::Visitor - Visitor style traversal of Perl data structures
 
 =head1 SYNOPSIS
 
+	# NOTE
+	# You probably want to use Data::Visitor::Callback for trivial things
+
+	package FooCounter;
 	use base qw/Data::Visitor/;
+
+	BEGIN { __PACKAGE__->mk_accessors( "number_of_foos" ) };
 
 	sub visit_value {
 		my ( $self, $data ) = @_;
 
-		return $whatever;
+		if ( defined $data and $data eq "foo" ) {
+			$self->number_of_foos( ($self->number_of_foos || 0) + 1 );
+		}
+
+		return $data;
 	}
 
-	sub visit_array {
-		my ( $self, $data ) = @_;
+	my $counter = FooCounter->new;
 
-		# ...
+	$counter->visit( {
+		this => "that",
+		some_foos => [ qw/foo foo bar foo/ ],
+		the_other => "foo",
+	});
 
-		return $self->SUPER::visit_array( $whatever );
-	}
+	$counter->number_of_foos; # this is now 4
 
 =head1 DESCRIPTION
 
@@ -112,8 +124,6 @@ This module is a simple visitor implementation for Perl values.
 
 It has a main dispatcher method, C<visit>, which takes a single perl value and
 then calls the methods appropriate for that value.
-
-The visitor pattern is 
 
 =head1 METHODS
 
@@ -131,7 +141,13 @@ implementation will just forward to C<visit_value>.
 
 =item visit_array $array_ref
 
-This method is called when the value is an array reference.
+=item visit_hash $hash_ref
+
+=item visit_glob $glob_ref
+
+=item visit_scalar $scalar_ref
+
+These methods are called for the corresponding container type.
 
 =item visit_value $value
 
@@ -151,7 +167,7 @@ children also fmapped.
 
 =head1 SUBCLASSING
 
-Create instance data using the L<Class::Accessor> interface. L<Data::Validator>
+Create instance data using the L<Class::Accessor> interface. L<Data::Visitor>
 inherits L<Class::Accessor> to get a sane C<new>.
 
 Then override the callback methods in any way you like. To retain visitor
@@ -161,6 +177,10 @@ C<visit_hash>.
 =head1 SEE ALSO
 
 L<Tree::Simple::VisitorFactory>, L<Data::Traverse>
+
+L<http://en.wikipedia.org/wiki/Visitor_pattern>,
+L<http://www.ninebynine.org/Software/Learning-Haskell-Notes.html#functors>,
+L<http://en.wikipedia.org/wiki/Functor>
 
 =head1 AUTHOR
 

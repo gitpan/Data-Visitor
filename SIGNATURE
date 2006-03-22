@@ -14,13 +14,13 @@ not run its Makefile.PL or Build.PL.
 -----BEGIN PGP SIGNED MESSAGE-----
 Hash: SHA1
 
-SHA1 509a2daff64fcfa5a4a109578346ff9f79ecc99a Build.PL
-SHA1 d5d114531fb520cbdb372878b633e02f255b9110 Changes
+SHA1 6acdcb3e5260c1a746fd48533dc17ba72e1f5378 Build.PL
+SHA1 be32607b7a2f711422e6f4fc73118d525724dd92 Changes
 SHA1 d33439f719d6ad2cdb0499da44fc467ff9f27e5e MANIFEST
-SHA1 c04f14de3bb1aaa12d7f0ad297f0da80da89b000 META.yml
-SHA1 fcb5f51df9e299fd51478dff38d67a4dd65bf906 Makefile.PL
-SHA1 7a8f0e6022a67be17480e88b0fd5be54b7c5fba1 lib/Data/Visitor.pm
-SHA1 b84b6142f70c62b81efe4af2712f11256994c7f0 lib/Data/Visitor/Callback.pm
+SHA1 2c1a47ac7f2a15741d0a98b7b9278060fd8b743a META.yml
+SHA1 79929ca0e4a1ae67730f00f5fcfd0902cb95f0c6 Makefile.PL
+SHA1 9e15b20c8e5a6896d92e07c831e03fada94db2c0 lib/Data/Visitor.pm
+SHA1 5713e1145bf7b9a3a81564d42e73148b445cb718 lib/Data/Visitor/Callback.pm
 SHA1 3180f412df2834d1f1c9290e9b8726d0b374afc2 t/base.t
 SHA1 915e0a329acabb60b35f61ffef7d97a8bee57da0 t/callback.t
 SHA1 7e59409671d0147236beef17a6dfdc0997d6a97a t/callback_aliasing.t
@@ -29,7 +29,7 @@ SHA1 54affd2088fa25d8eec562fb8d39e1abd0d123c7 t/globs.t
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.1 (Darwin)
 
-iD8DBQFD6hXnVCwRwOvSdBgRAiasAJwIV3Jxh+j2IFEKM2+knGEExVRVYwCfSBRM
-1eGOoQAoLt93LbJIbKqG+6A=
-=tdR5
+iD8DBQFEIdNEVCwRwOvSdBgRAjy4AKC6n+sETKKcdrfKDzShdAVAbZkMzgCeNMow
+IgMrVyHgfQkSs3kW3S8DbjM=
+=LJxS
 -----END PGP SIGNATURE-----

@@ -16,11 +16,10 @@ sub new {
 		$ignore_ret = delete $callbacks{ignore_return_values};
 	}
 
-	my $self = $class->SUPER::new();
-
-	$self->callbacks( \%callbacks );
-
-	$self;
+	$class->SUPER::new({
+		ignore_return_values => $ignore_ret,
+		callbacks => \%callbacks,
+	});
 }
 
 sub visit {
@@ -111,7 +110,7 @@ The options supported are:
 
 When this is true (off by default) the return values from the callbacks are
 ignored, thus disabling the fmapping behavior as documented in
-L<Data::Validator>.
+L<Data::Visitor>.
 
 This is useful when you want to modify $_ directly
 
@@ -144,7 +143,7 @@ Called for all values
 
 =item value
 
-Called for non objects, non aggregate (hash, array) values.
+Called for non objects, non container (hash, array, glob or scalar ref) values.
 
 =item ref_value
 
@@ -165,6 +164,14 @@ Called for array references.
 =item hash
 
 Called for hash references.
+
+=item glob
+
+Called for glob references.
+
+=item scalar
+
+Called for scalar references.
 
 =back
 
