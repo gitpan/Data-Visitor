@@ -1,6 +1,6 @@
 ---
 name: Data-Visitor
-version: 0.04
+version: 0.05
 author:
   - 'Yuval Kogman <nothingmuch@woobling.org>'
 abstract: Visitor style traversal of Perl data structures
@@ -15,7 +15,7 @@ build_requires:
 provides:
   Data::Visitor:
     file: lib/Data/Visitor.pm
-    version: 0.04
+    version: 0.05
   Data::Visitor::Callback:
     file: lib/Data/Visitor/Callback.pm
 generated_by: Module::Build version 0.2611
