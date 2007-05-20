@@ -6,11 +6,11 @@ use base qw/Class::Accessor/;
 use strict;
 use warnings;
 
-use Scalar::Util qw/blessed refaddr/;
+use Scalar::Util qw/blessed refaddr reftype/;
 use overload ();
 use Symbol ();
 
-our $VERSION = "0.05";
+our $VERSION = "0.07";
 
 sub visit {
 	my ( $self, $data ) = @_;
@@ -39,11 +39,8 @@ sub visit_no_rec_check {
 
 	if ( blessed( $data ) ) {
 		return $self->visit_object( $data );
-	} elsif ( my $reftype = ref $data ) {
-		if ( $reftype eq "HASH" or $reftype eq "ARRAY" or $reftype eq "GLOB" or $reftype eq "SCALAR") {
-			my $method = lc "visit_$reftype";
-			return $self->$method( $data );
-		}
+	} elsif ( ref $data ) {
+		return $self->visit_ref( $data );
 	}
 	
 	return $self->visit_value( $data );
@@ -53,6 +50,21 @@ sub visit_object {
 	my ( $self, $object ) = @_;
 
 	return $self->visit_value( $object );
+}
+
+sub visit_ref {
+	my ( $self, $data ) = @_;
+
+	 my $reftype = reftype $data;
+
+	my $method = lc "visit_$reftype";
+
+	if ( $self->can($method) ) {
+		return $self->$method( $data );
+	} else {
+		return $self->visit_value($data);
+	}
+
 }
 
 sub visit_value {

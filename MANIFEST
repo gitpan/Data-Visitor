@@ -1,9 +1,9 @@
-Build.PL
 Changes
 lib/Data/Visitor.pm
 lib/Data/Visitor/Callback.pm
 Makefile.PL
 MANIFEST			This list of files
+MANIFEST.SKIP
 META.yml
 t/base.t
 t/bugs.t
@@ -11,4 +11,4 @@ t/callback.t
 t/callback_aliasing.t
 t/circular_refs.t
 t/globs.t
-SIGNATURE    Added here by Module::Build
+SIGNATURE                                Public-key signature (added by MakeMaker)
