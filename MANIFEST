@@ -11,4 +11,5 @@ t/callback.t
 t/callback_aliasing.t
 t/circular_refs.t
 t/globs.t
+t/magic.t
 SIGNATURE                                Public-key signature (added by MakeMaker)

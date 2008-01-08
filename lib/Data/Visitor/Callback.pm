@@ -18,9 +18,15 @@ sub new {
 		$ignore_ret = delete $callbacks{ignore_return_values};
 	}
 
+	my $tied_as_objects = 0;
+	if ( exists $callbacks{tied_as_objects} ) {
+		$tied_as_objects = delete $callbacks{tied_as_objects};
+	}
+
 	my @class_callbacks = grep { $_->can("isa") } keys %callbacks;
 
 	$class->SUPER::new({
+		tied_as_objects => $tied_as_objects,
 		ignore_return_values => $ignore_ret,
 		callbacks => \%callbacks,
 		class_callbacks => \@class_callbacks,
@@ -48,31 +54,24 @@ sub visit {
 sub visit_value {
 	my ( $self, $data ) = @_;
 
-	$self->callback( value => $data );
-	$self->callback( ( ref($data) ? "ref_value" : "plain_value" ) => $data );
+	$data = $self->callback_and_reg( value => $data );
+	$self->callback_and_reg( ( ref($data) ? "ref_value" : "plain_value" ) => $data );
 }
 
 sub visit_object {
 	my ( $self, $data ) = @_;
 
-	my $ignore = $self->ignore_return_values;
-
-	my $new_data = $self->callback( object => $data );
-	unless ( $ignore ) {
-		$self->_register_mapping( $data, $new_data );
-		$data = $new_data;
-	}
+	$data = $self->callback_and_reg( object => $data );
 
 	foreach my $class ( @{ $self->class_callbacks } ) {
 		last unless blessed($data);
 		next unless $data->isa($class);
 
-		my $new_data = $self->callback( $class => $data );
-		unless ( $ignore ) {
-			$self->_register_mapping( $data, $new_data );
-			$data = $new_data;
-		}
+		$data = $self->callback_and_reg( $class => $data );
 	}
+
+	$data = $self->callback_and_reg( object_final => $data )
+		if blessed($data);
 
 	$data;
 }
@@ -83,9 +82,8 @@ BEGIN {
 		*{"visit_$reftype"} = eval '
 			sub {
 				my ( $self, $data ) = @_;
-				my $new_data = $self->callback( '.$reftype.' => $data );
-				$self->_register_mapping( $data, $new_data );
-				if ( ref $data eq ref $new_data ) {
+				my $new_data = $self->callback_and_reg( '.$reftype.' => $data );
+				if ( "'.uc($reftype).'" eq ref $new_data ) {
 					return $self->_register_mapping( $data, $self->SUPER::visit_'.$reftype.'( $new_data ) );
 				} else {
 					return $self->_register_mapping( $data, $self->visit( $new_data ) );
@@ -96,14 +94,31 @@ BEGIN {
 }
 
 sub callback {
-	my ( $self, $name, $data ) = @_;
+	my ( $self, $name, $data, @args ) = @_;
 
 	if ( my $code = $self->callbacks->{$name} ) {
-		my $ret = $self->$code( $data );
+		my $ret = $self->$code( $data, @args );
 		return $self->ignore_return_values ? $data : $ret ;
 	} else {
 		return $data;
 	}
+}
+
+sub callback_and_reg {
+	my ( $self, $name, $data, @args ) = @_;
+
+	my $new_data = $self->callback( $name, $data, @args );
+
+	unless ( $self->ignore_return_values ) {
+		return $self->_register_mapping( $data, $new_data );
+	} else {
+		return $data;
+	}
+}
+
+sub visit_tied {
+	my ( $self, $tied, @args ) = @_;
+	$self->SUPER::visit_tied( $self->callback_and_reg( tied => $tied, @args ) );
 }
 
 __PACKAGE__;
@@ -151,6 +166,13 @@ ignored, thus disabling the fmapping behavior as documented in
 L<Data::Visitor>.
 
 This is useful when you want to modify $_ directly
+
+=item tied_as_objects
+
+Whether ot not to visit the L<perlfunc/tied> of a tied structure instead of
+pretending the structure is just a normal one.
+
+See L<Data::Visitor/visit_tied>.
 
 =back
 
@@ -226,6 +248,11 @@ Called for glob references.
 =item scalar
 
 Called for scalar references.
+
+=item tied
+
+Called on the return value of C<tied> for all tied containers. Also passes in
+the variable as the second argument.
 
 =back
 
