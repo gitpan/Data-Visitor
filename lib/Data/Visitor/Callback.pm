@@ -6,9 +6,11 @@ use base qw/Data::Visitor/;
 use strict;
 use warnings;
 
-use Scalar::Util qw/blessed refaddr/;
+use Scalar::Util qw/blessed refaddr reftype/;
 
 __PACKAGE__->mk_accessors( qw/callbacks class_callbacks ignore_return_values/ );
+
+BEGIN { *DEBUG = \&Data::Visitor::DEBUG }
 
 sub new {
 	my ( $class, %callbacks ) = @_;
@@ -23,7 +25,7 @@ sub new {
 		$tied_as_objects = delete $callbacks{tied_as_objects};
 	}
 
-	my @class_callbacks = grep { $_->can("isa") } keys %callbacks;
+	my @class_callbacks = do { no strict 'refs'; grep { defined %{"${_}::"} } keys %callbacks };
 
 	$class->SUPER::new({
 		tied_as_objects => $tied_as_objects,
@@ -41,6 +43,7 @@ sub visit {
 	local *_ = \$_[1]; # alias $_
 
 	if ( ref $data and exists $replaced_hash->{ refaddr($data) } ) {
+		$self->trace( mapping => replace => $data, with => $replaced_hash->{ refaddr($data) } ) if DEBUG;
 		return $_[1] = $replaced_hash->{ refaddr($data) };
 	} else {
 		my $ret = $self->SUPER::visit( $self->callback( visit => $data ) );
@@ -61,14 +64,22 @@ sub visit_value {
 sub visit_object {
 	my ( $self, $data ) = @_;
 
+	$self->trace( flow => visit_object => $data ) if DEBUG;
+
 	$data = $self->callback_and_reg( object => $data );
+
+	my $class_cb = 0;
 
 	foreach my $class ( @{ $self->class_callbacks } ) {
 		last unless blessed($data);
 		next unless $data->isa($class);
+		$self->trace( flow => class_callback => $class, on => $data ) if DEBUG;
 
+		$class_cb++;
 		$data = $self->callback_and_reg( $class => $data );
 	}
+
+	$data = $self->callback_and_reg( object_no_class => $data ) unless $class_cb;
 
 	$data = $self->callback_and_reg( object_final => $data )
 		if blessed($data);
@@ -76,20 +87,29 @@ sub visit_object {
 	$data;
 }
 
+sub subname { $_[2] }
+
 BEGIN {
+	eval {
+		require Sub::Name;
+		no warnings 'redefine';
+		*subname = \&Sub::Name::subname;
+	};
+
 	foreach my $reftype ( qw/array hash glob scalar code/ ) {
+		my $name = "visit_$reftype";
 		no strict 'refs';
-		*{"visit_$reftype"} = eval '
+		*$name = subname(__PACKAGE__ . "::$name", eval '
 			sub {
 				my ( $self, $data ) = @_;
 				my $new_data = $self->callback_and_reg( '.$reftype.' => $data );
-				if ( "'.uc($reftype).'" eq ref $new_data ) {
+				if ( "'.uc($reftype).'" eq (reftype($new_data)||"") ) {
 					return $self->_register_mapping( $data, $self->SUPER::visit_'.$reftype.'( $new_data ) );
 				} else {
 					return $self->_register_mapping( $data, $self->visit( $new_data ) );
 				}
 			}
-		' || die $@;
+		' || die $@);
 	}
 }
 
@@ -97,6 +117,7 @@ sub callback {
 	my ( $self, $name, $data, @args ) = @_;
 
 	if ( my $code = $self->callbacks->{$name} ) {
+		$self->trace( flow => callback => $name, on => $data ) if DEBUG;
 		my $ret = $self->$code( $data, @args );
 		return $self->ignore_return_values ? $data : $ret ;
 	} else {
@@ -225,13 +246,24 @@ Since L<Data::Visitor/visit_object> will not recurse downwards unless you
 delegate to C<visit_ref>, you can specify C<visit_ref> as the callback for
 C<object> in order to enter objects.
 
-It is reccomended that you specify the classes you want though, instead of just
-visiting any object forcefully.
+It is reccomended that you specify the classes (or base classes) you want
+though, instead of just visiting any object forcefully.
 
 =item Some::Class
 
-You can use any class name as a callback. This is clled only after the
+You can use any class name as a callback. This is colled only after the
 C<object> callback.
+
+If the object C<isa> the class then the callback will fire.
+
+=item object_no_class
+
+Called for every object that did not have a class callback.
+
+=item object_final
+
+The last callback called for objects, useful if you want to post process the
+output of any class callbacks.
 
 =item array
 
