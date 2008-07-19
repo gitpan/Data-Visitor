@@ -34,11 +34,15 @@ sub new {
 			# performed later. Anything that cold plausibly be a class name
 			# should be included in the list, even if the class doesn't
 			# actually exist.
-			m{ :: | ^[A-Z] }x
+
+			m{ :: | ^[A-Z] }x # if it looks kinda lack a class name
 				or
-			scalar keys %{"${_}::"}
+			scalar keys %{"${_}::"} # or it really is a class
 		} keys %callbacks;
 	};
+
+	# sort from least derived to most derived
+	@class_callbacks = sort { !$a->isa($b) <=> !$b->isa($a) } @class_callbacks;
 
 	$class->SUPER::new({
 		tied_as_objects => $tied_as_objects,
@@ -69,6 +73,19 @@ sub visit {
 	$replaced_hash->{ refaddr($data) } = $_ if ref $data and ( not ref $_ or refaddr($data) ne refaddr($_) );
 
 	return $ret;
+}
+
+sub visit_seen {
+	my ( $self, $data, $result ) = @_;
+
+	my $mapped = $self->callback( seen => $data, $result );
+
+	no warnings 'uninitialized';
+	if ( refaddr($mapped) == refaddr($data) ) {
+		return $result;
+	} else {
+		return $mapped;
+	}
 }
 
 sub visit_value {
