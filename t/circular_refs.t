@@ -3,36 +3,39 @@
 use strict;
 use warnings;
 
-use Test::More tests => 12;
+use Test::More tests => 18;
 
+use Scalar::Util qw(refaddr);
 
 use ok "Data::Visitor";
 use ok "Data::Visitor::Callback";
 
-my $structure = {
-	foo => {
-		bar => undef,
-	},
-};
-
-$structure->{foo}{bar} = $structure;
-
-my $o = Data::Visitor->new;
-
 {
-	alarm 1;
-	$o->visit( $structure );
-	alarm 0;
-	pass( "circular structures don't cause an endless loop" );
+	my $structure = {
+		foo => {
+			bar => undef,
+		},
+	};
+
+	$structure->{foo}{bar} = $structure;
+
+	my $o = Data::Visitor->new;
+
+	{
+		alarm 1;
+		$o->visit( $structure );
+		alarm 0;
+		pass( "circular structures don't cause an endless loop" );
+	}
+
+	is_deeply( $o->visit( $structure ), $structure, "Structure recreated" );
+
+	is( $structure, $structure->{foo}{bar}, "circular address" );
+
+	my $visited = $o->visit( $structure );
+
+	is( $visited, $visited->{foo}{bar}, "circular address" );
 }
-
-is_deeply( $o->visit( $structure ), $structure, "Structure recreated" );
-
-is( $structure, $structure->{foo}{bar}, "circular address" );
-
-my $visited = $o->visit( $structure );
-
-is( $visited, $visited->{foo}{bar}, "circular address" );
 
 {
 	my $orig = {
@@ -112,4 +115,38 @@ is( $visited, $visited->{foo}{bar}, "circular address" );
 		],
 		"seen callback",
 	);
+}
+
+{
+	my $orig = {
+		foo => { bar => 42 },
+	};
+
+	$orig->{bar} = \( $orig->{foo}{bar} );
+
+	is( refaddr($orig->{bar}), refaddr( \( $orig->{foo}{bar} ) ), "scalar ref to hash element" );
+
+	my $copy = Data::Visitor->new->visit($orig);
+
+	is_deeply( $copy, $orig, "structures eq deeply" );
+
+	local $TODO = "hash/array elements are not yet references internally";
+	is( refaddr($copy->{bar}), refaddr( \($copy->{foo}{bar}) ), "scalar ref in copy" );
+}
+
+{
+	my $orig = {
+		foo => 42,
+	};
+
+	$orig->{bar} = \( $orig->{foo} );
+
+	is( refaddr($orig->{bar}), refaddr( \( $orig->{foo} ) ), "scalar ref to sibling hash element" );
+
+	my $copy = Data::Visitor->new->visit($orig);
+
+	is_deeply( $copy, $orig, "structures eq deeply" );
+
+	local $TODO = "hash/array elements are not yet references internally";
+	is( refaddr($copy->{bar}), refaddr( \($copy->{foo}) ), "scalar ref in copy" );
 }

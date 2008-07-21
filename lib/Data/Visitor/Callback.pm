@@ -1,19 +1,38 @@
 #!/usr/bin/perl
 
 package Data::Visitor::Callback;
-use base qw/Data::Visitor/;
+use Squirrel;
 
-use strict;
-use warnings;
+use Data::Visitor ();
 
 use Carp qw(carp);
 use Scalar::Util qw/blessed refaddr reftype/;
 
-__PACKAGE__->mk_accessors( qw/callbacks class_callbacks ignore_return_values/ );
+use namespace::clean -except => 'meta';
 
 use constant DEBUG => Data::Visitor::DEBUG();
 use constant FIVE_EIGHT => ( $] >= 5.008 );
 
+extends qw(Data::Visitor);
+
+has callbacks => (
+	isa => "HashRef",
+	is  => "rw",
+	default => sub { {} },
+);
+
+has class_callbacks => (
+	isa => "ArrayRef",
+	is  => "rw",
+	default => sub { [] },
+);
+
+has ignore_return_values => (
+	isa => "Bool",
+	is  => "rw",
+);
+
+# FIXME BUILDARGS
 sub new {
 	my ( $class, %callbacks ) = @_;
 
@@ -121,6 +140,23 @@ sub visit_object {
 	$data;
 }
 
+sub visit_scalar {
+	my ( $self, $data ) = @_;
+	my $new_data = $self->callback_and_reg( scalar => $data );
+	if ( (reftype($new_data)||"") =~ /^(?: SCALAR | REF | LVALUE | VSTRING ) $/x ) {
+		my $visited = $self->SUPER::visit_scalar( $new_data );
+
+		no warnings "uninitialized";
+		if ( refaddr($visited) != refaddr($data) ) {
+			return $self->_register_mapping( $data, $visited );
+		} else {
+			return $visited;
+		}
+	} else {
+		return $self->_register_mapping( $data, $self->visit( $new_data ) );
+	}
+}
+
 sub subname { $_[1] }
 
 BEGIN {
@@ -130,7 +166,7 @@ BEGIN {
 		*subname = \&Sub::Name::subname;
 	};
 
-	foreach my $reftype ( qw/array hash glob scalar code/ ) {
+	foreach my $reftype ( qw/array hash glob code/ ) {
 		my $name = "visit_$reftype";
 		no strict 'refs';
 		*$name = subname(__PACKAGE__ . "::$name", eval '
@@ -186,7 +222,9 @@ sub visit_tied {
 	$self->SUPER::visit_tied( $self->callback_and_reg( tied => $tied, @args ), @args );
 }
 
-__PACKAGE__;
+__PACKAGE__->meta->make_immutable if __PACKAGE__->meta->can("make_immutable");
+
+__PACKAGE__
 
 __END__
 
@@ -203,6 +241,7 @@ Data::Visitor::Callback - A Data::Visitor with callbacks.
 	my $v = Data::Visitor::Callback->new(
 		value => sub { ... },
 		array => sub { ... },
+		object => "visit_ref", # can also use method names
 	);
 
 	$v->visit( $some_perl_value );
@@ -332,6 +371,12 @@ Called for scalar references.
 
 Called on the return value of C<tied> for all tied containers. Also passes in
 the variable as the second argument.
+
+=item seen
+
+Called for a reference value encountered a second time.
+
+Passes in the result mapping as the second argument.
 
 =back
 

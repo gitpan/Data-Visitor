@@ -1,21 +1,32 @@
 #!/usr/bin/perl
 
 package Data::Visitor;
-use base qw/Class::Accessor/;
+use Squirrel;
 
-use strict;
-use warnings;
-
-use Scalar::Util qw/blessed refaddr reftype/;
+use Scalar::Util qw/blessed refaddr reftype weaken isweak/;
 use overload ();
 use Symbol ();
 
 use Tie::ToObject;
 
-__PACKAGE__->mk_accessors(qw(tied_as_objects));
+use namespace::clean -except => 'meta';
 
-# the double not works makes this no longer undef, so exempt from useless constant warnings in older perls
+# the double not makes this no longer undef, so exempt from useless constant warnings in older perls
 use constant DEBUG => not not our $DEBUG || $ENV{DATA_VISITOR_DEBUG};
+
+our $VERSION = "0.18";
+
+has tied_as_objects => (
+	isa => "Bool",
+	is  => "rw",
+);
+
+# currently broken
+has weaken => (
+	isa => "Bool",
+	is  => "rw",
+	default => 0,
+);
 
 sub trace {
 	my ( $self, $category, @msg ) = @_;
@@ -35,8 +46,6 @@ sub _print_trace {
 	warn "@msg\n";
 }
 
-our $VERSION = "0.17";
-
 sub visit {
 	my ( $self, $data ) = @_;
 
@@ -45,15 +54,18 @@ sub visit {
 
 	my $seen_hash = local $self->{_seen} = ($self->{_seen} || {}); # delete it after we're done with the whole visit
 	if ( ref $data ) { # only references need recursion checks
+
+		$seen_hash->{weak} ||= isweak($_[1]) if $self->weaken;
+
 		if ( exists $seen_hash->{ refaddr($data) } ) {
 			$self->trace( mapping => found_mapping => from => $data, to => $seen_hash->{ refaddr($data) } ) if DEBUG;
-			return $self->visit_seen( $data, $seen_hash->{refaddr($data)} );
+			return $self->visit_seen( $_[1], $seen_hash->{refaddr($data)} );
 		} else {
 			$self->trace( mapping => no_mapping => $data ) if DEBUG;
 		}
 	}
 
-	return $self->visit_no_rec_check( $data );
+	return $self->visit_no_rec_check( $_[1] );
 }
 
 sub visit_seen {
@@ -77,18 +89,25 @@ sub visit_no_rec_check {
 	my ( $self, $data ) = @_;
 
 	if ( blessed($data) ) {
-		return $self->visit_object($data);
+		return $self->visit_object($_[1]);
 	} elsif ( ref $data ) {
-		return $self->visit_ref($data);
+		return $self->visit_ref($_[1]);
 	}
 
-	return $self->visit_value($data);
+	return $self->visit_value($_[1]);
 }
 
 sub visit_object {
 	my ( $self, $object ) = @_;
 	$self->trace( flow => visit_object => $object ) if DEBUG;
-	return $self->_register_mapping( $object, $self->visit_value($object) );
+
+	if ( not defined wantarray ) {
+		$self->_register_mapping( $object, $object );
+		$self->visit_value($_[1]);
+		return;
+	} else {
+		return $self->_register_mapping( $object, $self->visit_value($_[1]) );
+	}
 }
 
 sub visit_ref {
@@ -104,7 +123,7 @@ sub visit_ref {
 
 	my $method = $self->can(lc "visit_$reftype") || "visit_value";
 
-	return $self->$method($data);
+	return $self->$method($_[1]);
 }
 
 sub visit_value {
@@ -123,9 +142,9 @@ sub visit_hash {
 
 		my $tied = tied(%$hash);
 		if ( ref($tied) and $self->tied_as_objects ) {
-			$self->visit_tied($tied, $hash);
+			$self->visit_tied(tied(%$hash), $_[1]);
 		} else {
-			$self->visit_hash_entries($hash);
+			$self->visit_hash_entries($_[1]);
 		}
 
 		return;
@@ -134,14 +153,14 @@ sub visit_hash {
 		$self->_register_mapping( $hash, $new_hash );
 
 		my $tied = tied(%$hash);
-		if ( ref($tied) and $self->tied_as_objects and blessed(my $new_tied = $self->visit_tied($tied, $hash)) ) {
+		if ( ref($tied) and $self->tied_as_objects and blessed(my $new_tied = $self->visit_tied(tied(%$hash), $_[1])) ) {
 			$self->trace( data => tying => var => $new_hash, to => $new_tied ) if DEBUG;
 			tie %$new_hash, 'Tie::ToObject', $new_tied;
 		} else {
-			%$new_hash = $self->visit_hash_entries($hash);
+			%$new_hash = $self->visit_hash_entries($_[1]);
 		}
 
-		return $self->retain_magic( $hash, $new_hash );
+		return $self->retain_magic( $_[1], $new_hash );
 	}
 }
 
@@ -162,11 +181,11 @@ sub visit_hash_entry {
 
 	if ( not defined wantarray ) {
 		$self->visit_hash_key($key,$value,$hash);
-		$self->visit_hash_value($_[2],$key,$hash); # retain aliasing semantics
+		$self->visit_hash_value($_[2],$key,$hash);
 	} else {
 		return (
 			$self->visit_hash_key($key,$value,$hash),
-			$self->visit_hash_value($_[2],$key,$hash) # retain aliasing semantics
+			$self->visit_hash_value($_[2],$key,$hash),
 		);
 	}
 }
@@ -178,7 +197,7 @@ sub visit_hash_key {
 
 sub visit_hash_value {
 	my ( $self, $value, $key, $hash ) = @_;
-	$self->visit($_[1]); # retain it's aliasing semantics
+	$self->visit($_[1]);
 }
 
 sub visit_array {
@@ -189,9 +208,9 @@ sub visit_array {
 
 		my $tied = tied(@$array);
 		if ( ref($tied) and $self->tied_as_objects ) {
-			$self->visit_tied($tied, $array);
+			$self->visit_tied(tied(@$array), $_[1]);
 		} else {
-			$self->visit_array_entries($array);
+			$self->visit_array_entries($_[1]);
 		}
 
 		return;
@@ -200,14 +219,14 @@ sub visit_array {
 		$self->_register_mapping( $array, $new_array );
 
 		my $tied = tied(@$array);
-		if ( ref($tied) and $self->tied_as_objects and blessed(my $new_tied = $self->visit_tied($tied, $array)) ) {
+		if ( ref($tied) and $self->tied_as_objects and blessed(my $new_tied = $self->visit_tied(tied(@$array), $_[1])) ) {
 			$self->trace( data => tying => var => $new_array, to => $new_tied ) if DEBUG;
-			tie @$new_array, 'Data::Visitor::TieToObject', $new_tied;
+			tie @$new_array, 'Tie::ToObject', $new_tied;
 		} else {
-			@$new_array = $self->visit_array_entries($array);
+			@$new_array = $self->visit_array_entries($_[1]);
 		}
 
-		return $self->retain_magic( $array, $new_array );
+		return $self->retain_magic( $_[1], $new_array );
 	}
 }
 
@@ -234,7 +253,7 @@ sub visit_scalar {
 
 		my $tied = tied($$scalar);
 		if ( ref($tied) and $self->tied_as_objects ) {
-			$self->visit_tied($tied, $scalar);
+			$self->visit_tied(tied($$scalar), $_[1]);
 		} else {
 			$self->visit($$scalar);
 		}
@@ -245,20 +264,20 @@ sub visit_scalar {
 		$self->_register_mapping( $scalar, \$new_scalar );
 
 		my $tied = tied($$scalar);
-		if ( ref($tied) and $self->tied_as_objects and blessed(my $new_tied = $self->visit_tied($tied, $scalar)) ) {
+		if ( ref($tied) and $self->tied_as_objects and blessed(my $new_tied = $self->visit_tied(tied($$scalar), $_[1])) ) {
 			$self->trace( data => tying => var => $new_scalar, to => $new_tied ) if DEBUG;
-			tie $new_scalar, 'Data::Visitor::TieToObject', $new_tied;
+			tie $new_scalar, 'Tie::ToObject', $new_tied;
 		} else {
 			$new_scalar = $self->visit( $$scalar );
 		}
 
-		return $self->retain_magic( $scalar, \$new_scalar );
+		return $self->retain_magic( $_[1], \$new_scalar );
 	}
 }
 
 sub visit_code {
 	my ( $self, $code ) = @_;
-	$self->visit_value($code);
+	$self->visit_value($_[1]);
 }
 
 sub visit_glob {
@@ -269,7 +288,7 @@ sub visit_glob {
 
 		my $tied = tied(*$glob);
 		if ( ref($tied) and $self->tied_as_objects ) {
-			$self->visit_tied($tied, $glob);
+			$self->visit_tied(tied(*$glob), $_[1]);
 		} else {
 			$self->visit( *$glob{$_} || next ) for qw/SCALAR ARRAY HASH/;
 		}
@@ -281,15 +300,15 @@ sub visit_glob {
 		$self->_register_mapping( $glob, $new_glob );
 
 		my $tied = tied(*$glob);
-		if ( ref($tied) and $self->tied_as_objects and blessed(my $new_tied = $self->visit_tied($tied, $glob)) ) {
+		if ( ref($tied) and $self->tied_as_objects and blessed(my $new_tied = $self->visit_tied(tied(*$glob), $_[1])) ) {
 			$self->trace( data => tying => var => $new_glob, to => $new_tied ) if DEBUG;
-			tie *$new_glob, 'Data::Visitor::TieToObject', $new_tied;
+			tie *$new_glob, 'Tie::ToObject', $new_tied;
 		} else {
 			no warnings 'misc'; # Undefined value assigned to typeglob
 			*$new_glob = $self->visit( *$glob{$_} || next ) for qw/SCALAR ARRAY HASH/;
 		}
 
-		return $self->retain_magic( $glob, $new_glob );
+		return $self->retain_magic( $_[1], $new_glob );
 	}
 }
 
@@ -301,6 +320,28 @@ sub retain_magic {
 		bless $new, ref $proto;
 	}
 
+	my $seen_hash = $self->{_seen};
+	if ( $seen_hash->{weak} ) {
+		require Data::Alias;
+
+		my @weak_refs;
+		foreach my $value ( Data::Alias::deref($proto) ) {
+			if ( ref $value and isweak($value) ) {
+				push @weak_refs, refaddr $value;
+			}
+		}
+
+		if ( @weak_refs ) {
+			my %targets = map { refaddr($_) => 1 } @{ $self->{_seen} }{@weak_refs};
+			foreach my $value ( Data::Alias::deref($new) ) {
+				if ( ref $value and $targets{refaddr($value)}) {
+					push @{ $seen_hash->{weakened} ||= [] }, $value; # keep a ref around
+					weaken($value);
+				}
+			}
+		}
+	}
+
 	# FIXME real magic, too
 
 	return $new;
@@ -309,10 +350,12 @@ sub retain_magic {
 sub visit_tied {
 	my ( $self, $tied, $var ) = @_;
 	$self->trace( flow => visit_tied => $tied ) if DEBUG;
-	$self->visit($tied); # as an object eventually
+	$self->visit($_[1]); # as an object eventually
 }
 
-__PACKAGE__;
+__PACKAGE__->meta->make_immutable if __PACKAGE__->meta->can("make_immutable");
+
+__PACKAGE__
 
 __END__
 
@@ -328,15 +371,21 @@ Data::Visitor - Visitor style traversal of Perl data structures
 	# You probably want to use Data::Visitor::Callback for trivial things
 
 	package FooCounter;
-	use base qw/Data::Visitor/;
+	use Mouse;
 
-	BEGIN { __PACKAGE__->mk_accessors( "number_of_foos" ) };
+	extends qw(Data::Visitor);
+
+	has number_of_foos => (
+		isa => "Int",
+		is  => "rw",
+		default => 0,
+	);
 
 	sub visit_value {
 		my ( $self, $data ) = @_;
 
 		if ( defined $data and $data eq "foo" ) {
-			$self->number_of_foos( ($self->number_of_foos || 0) + 1 );
+			$self->number_of_foos( $self->number_of_foos + 1 );
 		}
 
 		return $data;
