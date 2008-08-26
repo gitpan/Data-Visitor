@@ -12,4 +12,6 @@ t/callback_aliasing.t
 t/circular_refs.t
 t/globs.t
 t/magic.t
+t/weak.t
+TODO
 SIGNATURE                                Public-key signature (added by MakeMaker)

@@ -33,6 +33,11 @@
 
 \.DS_Store$
 \.sw.$
-\.tar\.gz$
-^(\w+-)*(\w+)-\d\.\d+$
+(\w+-)*(\w+)-\d\.\d+(?:\.tar\.gz)?$
 
+\.t\.log$
+
+\.prove$
+
+# XS shit
+\.(?:bs|c|o)$

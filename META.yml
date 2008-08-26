@@ -1,14 +1,13 @@
 --- #YAML:1.0
 name:                Data-Visitor
-version:             0.18
+version:             0.19
 abstract:            ~
 license:             ~
 author:              ~
 generated_by:        ExtUtils::MakeMaker version 6.44
 distribution_type:   module
 requires:     
-    Data::Alias:                   0
-    Mouse:                         0.04
+    Mouse:                         0.06
     namespace::clean:              0.08
     Task::Weaken:                  0
     Test::MockObject:              1.04

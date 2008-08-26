@@ -32,19 +32,14 @@ has ignore_return_values => (
 	is  => "rw",
 );
 
-# FIXME BUILDARGS
-sub new {
-	my ( $class, %callbacks ) = @_;
+sub BUILDARGS {
+	my ( $class, @args ) = @_;
 
-	my $ignore_ret = 0;
-	if	( exists $callbacks{ignore_return_values} ) {
-		$ignore_ret = delete $callbacks{ignore_return_values};
-	}
+	my $args = $class->SUPER::BUILDARGS(@args);
 
-	my $tied_as_objects = 0;
-	if ( exists $callbacks{tied_as_objects} ) {
-		$tied_as_objects = delete $callbacks{tied_as_objects};
-	}
+	my %init_args = map { $_->init_arg => undef } $class->meta->compute_all_applicable_attributes;
+
+	my %callbacks = map { $_ => $args->{$_} } grep { not exists $init_args{$_} } keys %$args;
 
 	my @class_callbacks = do {
 		no strict 'refs';
@@ -63,35 +58,43 @@ sub new {
 	# sort from least derived to most derived
 	@class_callbacks = sort { !$a->isa($b) <=> !$b->isa($a) } @class_callbacks;
 
-	$class->SUPER::new({
-		tied_as_objects => $tied_as_objects,
-		ignore_return_values => $ignore_ret,
-		callbacks => \%callbacks,
+	return {
+		%$args,
+		callbacks       => \%callbacks,
 		class_callbacks => \@class_callbacks,
-	});
+	};
 }
 
 sub visit {
-	my ( $self, $data ) = @_;
+	my $self = shift;
 
 	my $replaced_hash = local $self->{_replaced} = ($self->{_replaced} || {}); # delete it after we're done with the whole visit
 
-	local *_ = \$_[1]; # alias $_
+	my @ret;
 
-	if ( ref $data and exists $replaced_hash->{ refaddr($data) } ) {
-		if ( FIVE_EIGHT ) {
-			$self->trace( mapping => replace => $data, with => $replaced_hash->{ refaddr($data) } ) if DEBUG;
-			return $_[1] = $replaced_hash->{ refaddr($data) };
-		} else {
-			carp(q{Assignment of replacement value for already seen reference } . overload::StrVal($data) . q{ to container doesn't work on Perls older than 5.8, structure shape may have lost integrity.});
+	for my $data (@_) {
+		my $refaddr = ref($data) && refaddr($data); # we need this early, it may change by the time we write replaced hash
+
+		local *_ = \$data; # alias $_
+
+		if ( $refaddr and exists $replaced_hash->{ $refaddr } ) {
+			if ( FIVE_EIGHT ) {
+				$self->trace( mapping => replace => $data, with => $replaced_hash->{$refaddr} ) if DEBUG;
+				push @ret, $data = $replaced_hash->{$refaddr};
+				next;
+			} else {
+				carp(q{Assignment of replacement value for already seen reference } . overload::StrVal($data) . q{ to container doesn't work on Perls older than 5.8, structure shape may have lost integrity.});
+			}
 		}
+
+		my $ret = $self->SUPER::visit( $self->callback( visit => $data ) );
+
+		$replaced_hash->{$refaddr} = $_ if $refaddr and ( not ref $_ or $refaddr ne refaddr($_) );
+
+		push @ret, $ret;
 	}
 
-	my $ret = $self->SUPER::visit( $self->callback( visit => $data ) );
-
-	$replaced_hash->{ refaddr($data) } = $_ if ref $data and ( not ref $_ or refaddr($data) ne refaddr($_) );
-
-	return $ret;
+	return ( @_ == 1 ? $ret[0] : @ret );
 }
 
 sub visit_seen {
