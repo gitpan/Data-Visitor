@@ -87,11 +87,17 @@ sub visit {
 			}
 		}
 
-		my $ret = $self->SUPER::visit( $self->callback( visit => $data ) );
+		my $ret;
+
+		if ( defined wantarray ) {
+			$ret = $self->SUPER::visit( $self->callback( visit => $data ) );
+		} else {
+			$self->SUPER::visit( $self->callback( visit => $data ) );
+		}
 
 		$replaced_hash->{$refaddr} = $_ if $refaddr and ( not ref $_ or $refaddr ne refaddr($_) );
 
-		push @ret, $ret;
+		push @ret, $ret if defined wantarray;
 	}
 
 	return ( @_ == 1 ? $ret[0] : @ret );
@@ -212,9 +218,13 @@ sub callback_and_reg {
 
 	unless ( $self->ignore_return_values ) {
 		no warnings 'uninitialized';
-		if ( refaddr($data) != refaddr($new_data) ) {
-			return $self->_register_mapping( $data, $new_data );
+		if ( ref $data ) {
+			if ( refaddr($data) != refaddr($new_data) ) {
+				return $self->_register_mapping( $data, $new_data );
+			}
 		}
+
+		return $new_data;
 	}
 
 	return $data;
