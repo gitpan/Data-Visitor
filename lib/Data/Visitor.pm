@@ -9,12 +9,14 @@ use Symbol ();
 
 use Tie::ToObject;
 
+no warnings 'recursion';
+
 use namespace::clean -except => 'meta';
 
 # the double not makes this no longer undef, so exempt from useless constant warnings in older perls
 use constant DEBUG => not not our $DEBUG || $ENV{DATA_VISITOR_DEBUG};
 
-our $VERSION = "0.21";
+our $VERSION = "0.22";
 
 has tied_as_objects => (
 	isa => "Bool",
@@ -655,7 +657,9 @@ L<http://en.wikipedia.org/wiki/Functor>
 
 =head1 AUTHOR
 
-Yuval Kogman <nothingmuch@woobling.org>
+Yuval Kogman C<< <nothingmuch@woobling.org> >>
+
+Marcel GrE<uuml>nauer, C<< <marcel@cpan.org> >>
 
 =head1 COPYRIGHT & LICENSE
 

@@ -8,6 +8,8 @@ use Data::Visitor ();
 use Carp qw(carp);
 use Scalar::Util qw/blessed refaddr reftype/;
 
+no warnings 'recursion';
+
 use namespace::clean -except => 'meta';
 
 use constant DEBUG => Data::Visitor::DEBUG();
@@ -101,6 +103,18 @@ sub visit {
 	}
 
 	return ( @_ == 1 ? $ret[0] : @ret );
+}
+
+sub visit_ref {
+	my ( $self, $data ) = @_;
+
+	my $mapped = $self->callback( ref => $data );
+
+	if ( ref $mapped ) {
+		return $self->SUPER::visit_ref($mapped);
+	} else {
+		return $self->visit($mapped);
+	}
 }
 
 sub visit_seen {
@@ -199,15 +213,46 @@ BEGIN {
 	}
 }
 
+sub visit_hash_entry {
+	my ( $self, $key, $value, $hash ) = @_;
+
+	my ( $new_key, $new_value ) = $self->callback( hash_entry => $_[1], $_[2], $_[3] );
+
+	unless ( $self->ignore_return_values ) {
+		no warnings 'uninitialized';
+		if ( ref($value) and refaddr($value) != refaddr($new_value) ) {
+			$self->_register_mapping( $value, $new_value );
+			if ( $key ne $new_key ) {
+				return $self->SUPER::visit_hash_entry($new_key, $new_value, $_[3]);
+			} else {
+				return $self->SUPER::visit_hash_entry($_[1], $new_value, $_[3]);
+			}
+		} else {
+			if ( $key ne $new_key ) {
+				return $self->SUPER::visit_hash_entry($new_key, $_[2], $_[3]);
+			} else {
+				return $self->SUPER::visit_hash_entry($_[1], $_[2], $_[3]);
+			}
+		}
+	} else {
+		return $self->SUPER::visit_hash_entry($_[1], $_[2], $_[3]);
+	}
+}
+
 sub callback {
 	my ( $self, $name, $data, @args ) = @_;
 
 	if ( my $code = $self->callbacks->{$name} ) {
 		$self->trace( flow => callback => $name, on => $data ) if DEBUG;
-		my $ret = $self->$code( $data, @args );
-		return $self->ignore_return_values ? $data : $ret ;
+		if ( wantarray ) {
+			my @ret = $self->$code( $data, @args );
+			return $self->ignore_return_values ? ( $data, @args ) : @ret;
+		} else {
+			my $ret = $self->$code( $data, @args );
+			return $self->ignore_return_values ? $data : $ret ;
+		}
 	} else {
-		return $data;
+		return wantarray ? ( $data, @args ) : $data;
 	}
 }
 
