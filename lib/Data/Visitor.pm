@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 package Data::Visitor;
-use Any::Moose;
+use Moose;
 
 use Scalar::Util qw/blessed refaddr reftype weaken isweak/;
 use overload ();
@@ -16,7 +16,7 @@ use namespace::clean -except => 'meta';
 # the double not makes this no longer undef, so exempt from useless constant warnings in older perls
 use constant DEBUG => not not our $DEBUG || $ENV{DATA_VISITOR_DEBUG};
 
-our $VERSION = "0.25";
+our $VERSION = "0.26";
 
 has tied_as_objects => (
 	isa => "Bool",
@@ -458,7 +458,7 @@ Data::Visitor - Visitor style traversal of Perl data structures
 	# You probably want to use Data::Visitor::Callback for trivial things
 
 	package FooCounter;
-	use Mouse;
+	use Moose;
 
 	extends qw(Data::Visitor);
 

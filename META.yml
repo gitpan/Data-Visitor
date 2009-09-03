@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               Data-Visitor
-version:            0.25
+version:            0.26
 abstract:           ~
 author:  []
 license:            unknown
@@ -10,7 +10,7 @@ configure_requires:
 build_requires:
     ExtUtils::MakeMaker:  0
 requires:
-    Any::Moose:        0.09
+    Moose:             0.89
     namespace::clean:  0.08
     Task::Weaken:      0
     Test::MockObject:  1.04
@@ -21,7 +21,7 @@ no_index:
     directory:
         - t
         - inc
-generated_by:       ExtUtils::MakeMaker version 6.50
+generated_by:       ExtUtils::MakeMaker version 6.55_02
 meta-spec:
     url:      http://module-build.sourceforge.net/META-spec-v1.4.html
     version:  1.4
