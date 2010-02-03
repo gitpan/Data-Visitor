@@ -1,5 +1,5 @@
 This file contains message digests of all files listed in MANIFEST,
-signed via the Module::Signature module, version 0.55.
+signed via the Module::Signature module, version 0.61.
 
 To verify the content in this distribution, first make sure you have
 Module::Signature installed, then type:
@@ -14,26 +14,26 @@ not run its Makefile.PL or Build.PL.
 -----BEGIN PGP SIGNED MESSAGE-----
 Hash: SHA1
 
-SHA1 d291dec0f0d68e8ca7d4e13f6cdd545917990f6a Changes
+SHA1 01ad9fcc3019192733f69a1207d7ce4f6e3f85c0 Changes
 SHA1 11833dd37a9d42763f59fb6d4b595c294c50c453 MANIFEST
 SHA1 be688d6b494c6b54da61359d6a40dbfae00cd487 MANIFEST.SKIP
-SHA1 fa5935e40a2ab24963d4d92fb63e8adb67a12d09 META.yml
-SHA1 e84436ee74b342007c95b7ab132500d4a1e87944 Makefile.PL
-SHA1 427315bb45feeb30ce37c4a9ac720879109cfc2e lib/Data/Visitor.pm
-SHA1 676a6e8ca194b32c668a35b67a52c4667f4f7aec lib/Data/Visitor/Callback.pm
-SHA1 5979c9ecf150b843cb7750f761c0a9c0c1211a41 t/base.t
+SHA1 a42ae60021a64e6913609d53d6fafeb8d04524db META.yml
+SHA1 4ee69cf23e55609af86d04b591e10e185f29aa80 Makefile.PL
+SHA1 86a3155cb025adaef60338021168435e6d48acaf lib/Data/Visitor.pm
+SHA1 6d30870c3bb5fa24dacea14c816bc55228ec37fc lib/Data/Visitor/Callback.pm
+SHA1 72d03be5f19b3f45d993e7cdd14c7d7cb9ed68d5 t/base.t
 SHA1 85ffd870fe37f7fd4ce1fc783f366bc50c253a02 t/bugs.t
 SHA1 a784785f789346f921612b88468e040dc5273bc3 t/callback.t
 SHA1 7868c691e6865c8e19be0030435f8a1524f6d237 t/callback_aliasing.t
 SHA1 8e12aee89dd53a62f46ac2c8bd0a55d35d01972c t/callback_hash_entry.t
 SHA1 ba502603afe759f9f22026c8c6527d1753fa6174 t/circular_refs.t
-SHA1 54affd2088fa25d8eec562fb8d39e1abd0d123c7 t/globs.t
+SHA1 2cc650274f202a589665859b65d72da00d66d02b t/globs.t
 SHA1 8bd93450c072afbef10a423dd360e8f55cdacd40 t/magic.t
 SHA1 66d201c2ce83481cee0a2838f118b5cce35c8bcc t/weak.t
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.7 (Darwin)
+Version: GnuPG v1.4.9 (GNU/Linux)
 
-iD8DBQFKn5xvVCwRwOvSdBgRAgHdAKCHjrl40X3LopQEGxEPStuDh8NhpQCgvKo5
-lRW+T7adlXJw1i/r3qwq0/s=
-=lYS5
+iEYEARECAAYFAktpI6gACgkQdC8qQo5jWl4pvwCfVDMQQVbe6a+X6njT/0mur85n
+HaMAn0f1AFSxkA2jO4uLeWGi1chUhghb
+=KM/E
 -----END PGP SIGNATURE-----
