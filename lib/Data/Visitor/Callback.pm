@@ -1,7 +1,12 @@
-#!/usr/bin/perl
-
 package Data::Visitor::Callback;
+BEGIN {
+  $Data::Visitor::Callback::AUTHORITY = 'cpan:NUFFIN';
+}
+{
+  $Data::Visitor::Callback::VERSION = '0.28';
+}
 use Moose;
+# ABSTRACT: A Data::Visitor with callbacks.
 
 use Data::Visitor ();
 
@@ -282,15 +287,19 @@ sub visit_tied {
 
 __PACKAGE__->meta->make_immutable if __PACKAGE__->meta->can("make_immutable");
 
-__PACKAGE__
+__PACKAGE__;
 
-__END__
+
 
 =pod
 
 =head1 NAME
 
 Data::Visitor::Callback - A Data::Visitor with callbacks.
+
+=head1 VERSION
+
+version 0.28
 
 =head1 SYNOPSIS
 
@@ -327,6 +336,8 @@ Data::Visitor::Callback - A Data::Visitor with callbacks.
 
 This is a L<Data::Visitor> subclass that lets you invoke callbacks instead of
 needing to subclass yourself.
+
+=encoding utf8
 
 =head1 METHODS
 
@@ -457,16 +468,35 @@ Passes in the result mapping as the second argument.
 
 =back
 
-=head1 AUTHOR
+=for Pod::Coverage DEBUG
+FIVE_EIGHT
+callback
+callback_and_reg
+subname
+
+=head1 AUTHORS
+
+=over 4
+
+=item *
 
 Yuval Kogman <nothingmuch@woobling.org>
 
-=head1 COPYRIGHT & LICENSE
+=item *
 
-	Copyright (c) 2006 Yuval Kogman. All rights reserved
-	This program is free software; you can redistribute
-	it and/or modify it under the same terms as Perl itself.
+Marcel Grünauer <marcel@cpan.org>
+
+=back
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2012 by Yuval Kogman.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
 
 =cut
 
+
+__END__
 

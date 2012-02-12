@@ -1,12 +1,18 @@
-#!/usr/bin/perl
-
 package Data::Visitor;
+BEGIN {
+  $Data::Visitor::AUTHORITY = 'cpan:NUFFIN';
+}
+{
+  $Data::Visitor::VERSION = '0.28';
+}
 use Moose;
+# ABSTRACT: Visitor style traversal of Perl data structures
 
 use Scalar::Util qw/blessed refaddr reftype weaken isweak/;
 use overload ();
 use Symbol ();
 
+use Class::Load 'load_optional_class';
 use Tie::ToObject;
 
 no warnings 'recursion';
@@ -16,7 +22,7 @@ use namespace::clean -except => 'meta';
 # the double not makes this no longer undef, so exempt from useless constant warnings in older perls
 use constant DEBUG => not not our $DEBUG || $ENV{DATA_VISITOR_DEBUG};
 
-our $VERSION = "0.27";
+use constant HAS_DATA_ALIAS => load_optional_class('Data::Alias');
 
 has tied_as_objects => (
 	isa => "Bool",
@@ -409,23 +415,26 @@ sub retain_magic {
 
 	my $seen_hash = $self->{_seen};
 	if ( $seen_hash->{weak} ) {
-		require Data::Alias;
-
-		my @weak_refs;
-		foreach my $value ( Data::Alias::deref($proto) ) {
-			if ( ref $value and isweak($value) ) {
-				push @weak_refs, refaddr $value;
-			}
-		}
-
-		if ( @weak_refs ) {
-			my %targets = map { refaddr($_) => 1 } @{ $self->{_seen} }{@weak_refs};
-			foreach my $value ( Data::Alias::deref($new) ) {
-				if ( ref $value and $targets{refaddr($value)}) {
-					push @{ $seen_hash->{weakened} ||= [] }, $value; # keep a ref around
-					weaken($value);
+		if (HAS_DATA_ALIAS) {
+			my @weak_refs;
+			foreach my $value ( Data::Alias::deref($proto) ) {
+				if ( ref $value and isweak($value) ) {
+					push @weak_refs, refaddr $value;
 				}
 			}
+
+			if ( @weak_refs ) {
+				my %targets = map { refaddr($_) => 1 } @{ $self->{_seen} }{@weak_refs};
+				foreach my $value ( Data::Alias::deref($new) ) {
+					if ( ref $value and $targets{refaddr($value)}) {
+						push @{ $seen_hash->{weakened} ||= [] }, $value; # keep a ref around
+						weaken($value);
+					}
+				}
+			}
+		}
+		else {
+			die "Found a weak reference, but Data::Alias is not installed. You must install Data::Alias in order for this to work.";
 		}
 	}
 
@@ -442,15 +451,19 @@ sub visit_tied {
 
 __PACKAGE__->meta->make_immutable if __PACKAGE__->meta->can("make_immutable");
 
-__PACKAGE__
+__PACKAGE__;
 
-__END__
+
 
 =pod
 
 =head1 NAME
 
 Data::Visitor - Visitor style traversal of Perl data structures
+
+=head1 VERSION
+
+version 0.28
 
 =head1 SYNOPSIS
 
@@ -501,6 +514,8 @@ structures, and all ref types (hashes, arrays, scalars, code, globs).
 
 L<Data::Visitor> is meant to be subclassed, but also ships with a callback
 driven subclass, L<Data::Visitor::Callback>.
+
+=encoding utf8
 
 =head1 METHODS
 
@@ -611,7 +626,6 @@ copying should be.
 
 Called if the C<DEBUG> constant is set with a trace message.
 
-
 =back
 
 =head1 RETURN VALUE
@@ -625,8 +639,7 @@ children also fmapped.
 
 =head1 SUBCLASSING
 
-Create instance data using the L<Class::Accessor> interface. L<Data::Visitor>
-inherits L<Class::Accessor> to get a sane C<new>.
+Data::Visitor is a L<Moose> class, so it should be subclassed using Moose.
 
 Then override the callback methods in any way you like. To retain visitor
 behavior, make sure to retain the functionality of C<visit_array> and
@@ -655,18 +668,41 @@ L<http://en.wikipedia.org/wiki/Visitor_pattern>,
 L<http://www.ninebynine.org/Software/Learning-Haskell-Notes.html#functors>,
 L<http://en.wikipedia.org/wiki/Functor>
 
-=head1 AUTHOR
+=for Pod::Coverage HAS_DATA_ALIAS
+visit_normal_array
+visit_normal_glob
+visit_normal_hash
+visit_normal_scalar
+visit_tied_array
+visit_tied_glob
+visit_tied_hash
+visit_tied_scalar
 
-Yuval Kogman C<< <nothingmuch@woobling.org> >>
+=head1 AUTHORS
 
-Marcel GrE<uuml>nauer, C<< <marcel@cpan.org> >>
+=over 4
 
-=head1 COPYRIGHT & LICENSE
+=item *
 
-	Copyright (c) 2006-2008 Yuval Kogman. All rights reserved
-	This program is free software; you can redistribute
-	it and/or modify it under the same terms as Perl itself.
+Yuval Kogman <nothingmuch@woobling.org>
+
+=item *
+
+Marcel Grünauer <marcel@cpan.org>
+
+=back
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2012 by Yuval Kogman.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
 
 =cut
+
+
+__END__
+
 
 
