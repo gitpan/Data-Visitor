@@ -3,7 +3,7 @@ BEGIN {
   $Data::Visitor::Callback::AUTHORITY = 'cpan:NUFFIN';
 }
 {
-  $Data::Visitor::Callback::VERSION = '0.28';
+  $Data::Visitor::Callback::VERSION = '0.29';
 }
 use Moose;
 # ABSTRACT: A Data::Visitor with callbacks.
@@ -151,9 +151,10 @@ sub visit_object {
 
 	my $class_cb = 0;
 
-	foreach my $class ( @{ $self->class_callbacks } ) {
+	foreach my $class ( grep { $data->isa($_) } @{ $self->class_callbacks } ) {
 		last unless blessed($data);
-		next unless $data->isa($class);
+		die "Unexpected object $data found"
+			unless $data->isa($class);
 		$self->trace( flow => class_callback => $class, on => $data ) if DEBUG;
 
 		$class_cb++;
@@ -289,7 +290,7 @@ __PACKAGE__->meta->make_immutable if __PACKAGE__->meta->can("make_immutable");
 
 __PACKAGE__;
 
-
+__END__
 
 =pod
 
@@ -299,7 +300,7 @@ Data::Visitor::Callback - A Data::Visitor with callbacks.
 
 =head1 VERSION
 
-version 0.28
+version 0.29
 
 =head1 SYNOPSIS
 
@@ -490,13 +491,9 @@ Marcel Grünauer <marcel@cpan.org>
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2012 by Yuval Kogman.
+This software is copyright (c) 2013 by Yuval Kogman.
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.
 
 =cut
-
-
-__END__
-

@@ -14,10 +14,11 @@ t/bugs.t
 t/callback.t
 t/callback_aliasing.t
 t/callback_hash_entry.t
+t/callback_moose_tc.t
 t/circular_refs.t
 t/globs.t
 t/magic.t
-t/release-eol.t
-t/release-pod-coverage.t
-t/release-pod-syntax.t
 t/weak.t
+xt/release/eol.t
+xt/release/pod-coverage.t
+xt/release/pod-syntax.t

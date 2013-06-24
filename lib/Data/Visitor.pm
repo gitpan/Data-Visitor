@@ -3,7 +3,7 @@ BEGIN {
   $Data::Visitor::AUTHORITY = 'cpan:NUFFIN';
 }
 {
-  $Data::Visitor::VERSION = '0.28';
+  $Data::Visitor::VERSION = '0.29';
 }
 use Moose;
 # ABSTRACT: Visitor style traversal of Perl data structures
@@ -453,7 +453,7 @@ __PACKAGE__->meta->make_immutable if __PACKAGE__->meta->can("make_immutable");
 
 __PACKAGE__;
 
-
+__END__
 
 =pod
 
@@ -463,7 +463,7 @@ Data::Visitor - Visitor style traversal of Perl data structures
 
 =head1 VERSION
 
-version 0.28
+version 0.29
 
 =head1 SYNOPSIS
 
@@ -694,15 +694,9 @@ Marcel Grünauer <marcel@cpan.org>
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2012 by Yuval Kogman.
+This software is copyright (c) 2013 by Yuval Kogman.
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.
 
 =cut
-
-
-__END__
-
-
-
