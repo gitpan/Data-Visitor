@@ -3,7 +3,7 @@ BEGIN {
   $Data::Visitor::Callback::AUTHORITY = 'cpan:NUFFIN';
 }
 {
-  $Data::Visitor::Callback::VERSION = '0.29';
+  $Data::Visitor::Callback::VERSION = '0.30';
 }
 use Moose;
 # ABSTRACT: A Data::Visitor with callbacks.
@@ -300,7 +300,7 @@ Data::Visitor::Callback - A Data::Visitor with callbacks.
 
 =head1 VERSION
 
-version 0.29
+version 0.30
 
 =head1 SYNOPSIS
 

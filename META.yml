@@ -24,8 +24,8 @@ requires:
 resources:
   bugtracker: http://rt.cpan.org/Public/Dist/Display.html?Name=Data-Visitor
   homepage: http://metacpan.org/release/Data-Visitor
-  repository: git://github.com/nothingmuch/data-visitor.git
-version: 0.29
+  repository: git://github.com/doy/data-visitor.git
+version: 0.30
 x_Dist_Zilla:
   perl:
     version: 5.018000

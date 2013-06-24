@@ -3,7 +3,7 @@ BEGIN {
   $Data::Visitor::AUTHORITY = 'cpan:NUFFIN';
 }
 {
-  $Data::Visitor::VERSION = '0.29';
+  $Data::Visitor::VERSION = '0.30';
 }
 use Moose;
 # ABSTRACT: Visitor style traversal of Perl data structures
@@ -463,7 +463,7 @@ Data::Visitor - Visitor style traversal of Perl data structures
 
 =head1 VERSION
 
-version 0.29
+version 0.30
 
 =head1 SYNOPSIS
 
